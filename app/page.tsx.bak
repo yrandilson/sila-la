@@ -1,0 +1,202 @@
+import { supabase } from '@/lib/supabase'
+import { Product } from '@/lib/types'
+import Link from 'next/link'
+import { ArrowRight, ExternalLink, Shield, Sparkles, Download, BadgeCheck } from 'lucide-react'
+
+async function getProducts(): Promise<Product[]> {
+  const { data } = await supabase
+    .from('products')
+    .select('*')
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+
+  return data || []
+}
+
+const typeLabels: Record<string, string> = {
+  planilha: 'Planilha',
+  software: 'Software',
+  site: 'Template Site',
+  aplicacao: 'Aplicacao',
+  outro: 'Produto Digital',
+}
+
+const typeEmoji: Record<string, string> = {
+  planilha: '📊',
+  software: '⚙️',
+  site: '🌐',
+  aplicacao: '📱',
+  outro: '📦',
+}
+
+function formatPrice(cents: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100)
+}
+
+export default async function HomePage() {
+  const products = await getProducts()
+
+  return (
+    <div className="site-shell">
+      <nav className="top-nav">
+        <div className="container top-nav-row">
+          <Link href="/" className="brand">
+            sila<span>la</span>
+          </Link>
+
+          <div className="nav-links">
+            <a href="#produtos" className="nav-link">Produtos</a>
+            <a href="#sobre" className="nav-link">Diferenciais</a>
+            <Link href="/admin" className="btn-outline">Admin</Link>
+          </div>
+        </div>
+      </nav>
+
+      <section className="hero">
+        <div className="container hero-grid">
+          <div className="hero-card">
+            <div className="kicker">Loja de Produtos Digitais</div>
+            <h1 className="hero-title">
+              Design, codigo e produtividade <span>em produtos prontos para venda.</span>
+            </h1>
+            <p className="hero-copy">
+              Publique planilhas, automacoes, templates, scripts, apps e sistemas em um unico lugar,
+              com checkout profissional e entrega digital imediata.
+            </p>
+
+            <div className="hero-actions">
+              <a href="#produtos" className="btn-primary">
+                Ver catalogo
+                <ArrowRight size={16} />
+              </a>
+              <Link href="/admin" className="btn-outline">Publicar novo produto</Link>
+            </div>
+          </div>
+
+          <aside className="panel">
+            <div className="stat-list">
+              <div className="stat-item">
+                <p className="stat-number">{products.length}</p>
+                <p className="stat-label">Produtos ativos no catalogo</p>
+              </div>
+
+              <div className="stat-item">
+                <p className="stat-number">24h</p>
+                <p className="stat-label">Venda automatica sem atendimento manual</p>
+              </div>
+
+              <div className="stat-item">
+                <p className="stat-number">Stripe</p>
+                <p className="stat-label">Pagamento seguro com fluxo reconhecido</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="produtos" className="section">
+        <div className="container">
+          <div className="section-header">
+            <div>
+              <h2 className="section-title">Catalogo pronto para conversao</h2>
+              <p className="section-copy">
+                Pagine de produto otimizadas para decisao rapida de compra, com preco claro,
+                descricao objetiva e opcao de demo.
+              </p>
+            </div>
+          </div>
+
+          {products.length === 0 ? (
+            <div className="empty-state">
+              <p style={{ fontSize: '1.1rem', marginBottom: '0.4rem', fontFamily: 'var(--font-display)' }}>
+                Nenhum produto publicado ainda
+              </p>
+              <p style={{ marginBottom: '1rem', fontSize: '0.82rem' }}>
+                Entre no painel admin para cadastrar seu primeiro item.
+              </p>
+              <Link href="/admin" className="btn-primary">Ir para o painel</Link>
+            </div>
+          ) : (
+            <div className="product-grid">
+              {products.map((product) => (
+                <article key={product.id} className="product-card">
+                  <div className="thumb">{typeEmoji[product.type] || '📦'}</div>
+
+                  <div className="row-between">
+                    <span className="chip">{typeLabels[product.type] || 'Produto'}</span>
+                    <span className="price">{formatPrice(product.price)}</span>
+                  </div>
+
+                  <h3 className="product-title">{product.name}</h3>
+                  <p className="product-copy">{product.description}</p>
+
+                  {product.tags?.length > 0 && (
+                    <div className="tag-list">
+                      {product.tags.slice(0, 4).map((tag) => (
+                        <span key={tag} className="tag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="actions">
+                    <Link href={`/produto/${product.slug}`} className="btn-primary">Comprar</Link>
+                    {product.demo_url ? (
+                      <a href={product.demo_url} target="_blank" rel="noopener" className="btn-outline">
+                        <ExternalLink size={14} /> Demo
+                      </a>
+                    ) : (
+                      <Link href={`/produto/${product.slug}`} className="btn-outline">Detalhes</Link>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section id="sobre" className="section">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="section-title">Estrutura moderna para escalar</h2>
+          </div>
+
+          <div className="feature-grid">
+            <article className="feature-card">
+              <Sparkles size={20} className="feature-icon" />
+              <h3 className="feature-title">Vitrine profissional</h3>
+              <p className="feature-copy">Visual limpo, forte e pronto para campanhas de trafego pago e organico.</p>
+            </article>
+
+            <article className="feature-card">
+              <Shield size={20} className="feature-icon" />
+              <h3 className="feature-title">Checkout seguro</h3>
+              <p className="feature-copy">Processamento de pagamento com Stripe e confirmacao automatica por webhook.</p>
+            </article>
+
+            <article className="feature-card">
+              <Download size={20} className="feature-icon" />
+              <h3 className="feature-title">Entrega imediata</h3>
+              <p className="feature-copy">Download com URL assinada e controle de tentativas para proteger os arquivos.</p>
+            </article>
+
+            <article className="feature-card">
+              <BadgeCheck size={20} className="feature-icon" />
+              <h3 className="feature-title">Pronto para crescer</h3>
+              <p className="feature-copy">Serve para planilhas, scripts, automacoes, sites, apps, extensoes e sistemas.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <footer className="footer">
+        <div className="container">
+          © {new Date().getFullYear()} Sila La · Produtos Digitais · contato@silala.com.br
+        </div>
+      </footer>
+    </div>
+  )
+}

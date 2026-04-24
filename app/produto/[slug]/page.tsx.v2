@@ -1,0 +1,345 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { Product } from '@/lib/types'
+import { CheckoutButton } from './CheckoutButton'
+import {
+  Star,
+  Heart,
+  Share2,
+  Download,
+  Check,
+  AlertCircle,
+} from 'lucide-react'
+import Link from 'next/link'
+
+interface ProductPageProps {
+  params: {
+    slug: string
+  }
+}
+
+const typeEmoji: Record<string, string> = {
+  planilha: '📊',
+  software: '⚙️',
+  site: '🌐',
+  aplicacao: '📱',
+  outro: '📦',
+}
+
+function formatPrice(cents: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100)
+}
+
+export default function ProductPage({ params }: ProductPageProps) {
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [quantity, setQuantity] = useState(1)
+
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        const { data } = await supabase
+          .from('products')
+          .select('*')
+          .eq('slug', params.slug)
+          .single()
+
+        if (!data) {
+          setError('Produto não encontrado')
+          return
+        }
+
+        setProduct(data)
+      } catch (err) {
+        setError('Erro ao carregar produto')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProduct()
+  }, [params.slug])
+
+  if (loading) {
+    return (
+      <div className="product-page">
+        <div className="loader-container">
+          <div className="spinner"></div>
+          <p>Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !product) {
+    return (
+      <div className="product-page">
+        <div className="error-container">
+          <AlertCircle size={48} />
+          <h1>{error || 'Produto não encontrado'}</h1>
+          <p>Este produto pode ter sido removido ou não está mais disponível.</p>
+          <Link href="/" className="btn-back">Voltar ao catálogo</Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="product-page">
+      {/* BREADCRUMB */}
+      <nav className="breadcrumb">
+        <div className="store-container">
+          <Link href="/">Início</Link>
+          <span>/</span>
+          <span>{product.name}</span>
+        </div>
+      </nav>
+
+      {/* MAIN CONTENT */}
+      <div className="store-container product-wrapper">
+        {/* LEFT COLUMN - PRODUCT INFO */}
+        <div className="product-info">
+          {/* PRODUCT IMAGE */}
+          <div className="product-hero-image">
+            <span className="emoji-large">{typeEmoji[product.type] || '📦'}</span>
+            <button className="heart-btn">
+              <Heart size={24} />
+            </button>
+          </div>
+
+          {/* QUICK INFO */}
+          <div className="quick-info-row">
+            <div className="info-badge">
+              <Check size={16} />
+              <span>Acesso imediato</span>
+            </div>
+            <div className="info-badge">
+              <Download size={16} />
+              <span>Download seguro</span>
+            </div>
+          </div>
+
+          {/* PRODUCT DETAILS */}
+          <div className="product-details-section">
+            <div className="rating-section">
+              <div className="stars-large">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    size={18}
+                    className={i < 4 ? 'filled' : ''}
+                  />
+                ))}
+              </div>
+              <span className="rating-text">4.8 (127 avaliações)</span>
+            </div>
+
+            <h1 className="product-title">{product.name}</h1>
+
+            <p className="product-description-main">
+              {product.description}
+            </p>
+
+            {/* FEATURES */}
+            {product.tags && product.tags.length > 0 && (
+              <div className="features-section">
+                <h3 className="section-title">Características</h3>
+                <ul className="features-list">
+                  {product.tags.map((tag) => (
+                    <li key={tag}>
+                      <Check size={16} className="feature-icon" />
+                      <span>{tag}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* FULL DESCRIPTION */}
+            <div className="description-section">
+              <h3 className="section-title">Descrição Completa</h3>
+              <div className="description-text">
+                <p>
+                  Este é um produto digital premium desenvolvido com atenção aos
+                  detalhes. Você terá acesso imediato após a compra e poderá fazer
+                  download do arquivo autenticado e seguro.
+                </p>
+                <p>
+                  Incluso no pacote:
+                </p>
+                <ul>
+                  <li>Arquivos originais em formato compatível</li>
+                  <li>Suporte por email para dúvidas técnicas</li>
+                  <li>Atualizações futuras gratuitas</li>
+                  <li>Garantia de 7 dias ou seu dinheiro de volta</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* DEMO */}
+            {product.demo_url && (
+              <div className="demo-section">
+                <a href={product.demo_url} target="_blank" rel="noopener" className="demo-link">
+                  👁️ Ver prévia / Demo do produto
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN - CHECKOUT */}
+        <div className="checkout-column">
+          <div className="checkout-card">
+            {/* PRICE SECTION */}
+            <div className="price-section">
+              <span className="price-label">Preço</span>
+              <p className="price-display">{formatPrice(product.price)}</p>
+              <p className="price-note">Acesso vitalício</p>
+            </div>
+
+            {/* BENEFITS */}
+            <div className="benefits-list">
+              <div className="benefit-item">
+                <Check size={18} className="benefit-icon" />
+                <span>Acesso imediato ao arquivo</span>
+              </div>
+              <div className="benefit-item">
+                <Check size={18} className="benefit-icon" />
+                <span>Suporte técnico por email</span>
+              </div>
+              <div className="benefit-item">
+                <Check size={18} className="benefit-icon" />
+                <span>Garantia de 7 dias</span>
+              </div>
+              <div className="benefit-item">
+                <Check size={18} className="benefit-icon" />
+                <span>Sem taxas ocultas</span>
+              </div>
+            </div>
+
+            {/* QUANTITY */}
+            <div className="quantity-section">
+              <label htmlFor="quantity" className="label">Quantidade</label>
+              <div className="quantity-input">
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
+                <input
+                  id="quantity"
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value)))}
+                />
+                <button onClick={() => setQuantity(quantity + 1)}>+</button>
+              </div>
+            </div>
+
+            {/* CTA BUTTONS */}
+            <div className="btn-group">
+              <CheckoutButton productId={product.id} className="btn-checkout" />
+              <button className="btn-secondary" title="Compartilhar">
+                <Share2 size={18} />
+              </button>
+            </div>
+
+            {/* PAYMENT METHODS */}
+            <div className="payment-info">
+              <p className="payment-title">Formas de pagamento</p>
+              <div className="payment-methods">
+                <span className="method">Cartão de crédito</span>
+                <span className="method">PIX</span>
+                <span className="method">Stripe</span>
+              </div>
+            </div>
+
+            {/* SECURITY BADGES */}
+            <div className="security-badges">
+              <div className="badge">🔒 SSL Seguro</div>
+              <div className="badge">✓ Verificado</div>
+              <div className="badge">🛡️ Proteção do Comprador</div>
+            </div>
+
+            {/* SELLER INFO */}
+            <div className="seller-info">
+              <p className="seller-title">Vendedor verificado</p>
+              <div className="seller-badge">
+                <div className="seller-avatar">SL</div>
+                <div>
+                  <p className="seller-name">Sila Lá Store</p>
+                  <p className="seller-rating">4.9 ⭐ (2.5k vendas)</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RELATED PRODUCTS */}
+          <div className="related-products">
+            <h3 className="section-title">Você também pode gostar</h3>
+            <div className="related-grid">
+              {['📊 Planilha de Vendas', '⚙️ Automação', '🌐 Gerador de Sites'].map(
+                (item) => (
+                  <Link key={item} href="/" className="related-item">
+                    <div className="related-image">
+                      {item.charAt(0)}
+                    </div>
+                    <p className="related-name">{item}</p>
+                  </Link>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* REVIEWS SECTION */}
+      <section className="reviews-section">
+        <div className="store-container">
+          <h2 className="section-title section-title-lg">Avaliações de clientes</h2>
+
+          <div className="reviews-grid">
+            {[
+              {
+                name: 'João Silva',
+                rating: 5,
+                text: 'Excelente! Funcionou perfeitamente. Recomendo!',
+              },
+              {
+                name: 'Maria Santos',
+                rating: 5,
+                text: 'Melhor custo-benefício que encontrei. Vale muito a pena.',
+              },
+              {
+                name: 'Pedro Costa',
+                rating: 4,
+                text: 'Muito bom, só gostaria de mais templates.',
+              },
+            ].map((review, idx) => (
+              <div key={idx} className="review-card">
+                <div className="review-header">
+                  <div>
+                    <p className="review-name">{review.name}</p>
+                    <p className="review-rating">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className={i < review.rating ? 'filled' : ''}>
+                          ⭐
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                </div>
+                <p className="review-text">{review.text}</p>
+              </div>
+            ))}
+          </div>
+
+          <button className="btn-primary btn-load-more">Carregar mais avaliações</button>
+        </div>
+      </section>
+    </div>
+  )
+}

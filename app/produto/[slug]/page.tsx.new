@@ -1,0 +1,135 @@
+import { supabase } from '@/lib/supabase'
+import { Product } from '@/lib/types'
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft, CheckCircle, Download, ExternalLink, Shield } from 'lucide-react'
+import CheckoutButton from './CheckoutButton'
+
+async function getProduct(slug: string): Promise<Product | null> {
+  const { data } = await supabase
+    .from('products')
+    .select('*')
+    .eq('slug', slug)
+    .eq('active', true)
+    .single()
+
+  return data
+}
+
+const typeLabels: Record<string, string> = {
+  planilha: 'Planilha',
+  software: 'Software',
+  site: 'Template Site',
+  aplicacao: 'Aplicacao',
+  outro: 'Produto Digital',
+}
+
+const typeEmoji: Record<string, string> = {
+  planilha: '📊',
+  software: '⚙️',
+  site: '🌐',
+  aplicacao: '📱',
+  outro: '📦',
+}
+
+function formatPrice(cents: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100)
+}
+
+export default async function ProductPage({ params }: { params: { slug: string } }) {
+  const product = await getProduct(params.slug)
+  if (!product) notFound()
+
+  const label = typeLabels[product.type] || 'Produto'
+  const emoji = typeEmoji[product.type] || '📦'
+
+  return (
+    <div className="site-shell">
+      <nav className="top-nav">
+        <div className="container top-nav-row">
+          <Link href="/" className="brand">sila<span>la</span></Link>
+          <Link href="/" className="btn-outline">
+            <ArrowLeft size={15} /> Voltar para loja
+          </Link>
+        </div>
+      </nav>
+
+      <section className="page-hero">
+        <div className="container product-layout">
+          <article className="detail-card">
+            <div className="detail-cover">{emoji}</div>
+
+            <div style={{ marginTop: '0.9rem' }}>
+              <span className="chip">{label}</span>
+            </div>
+
+            <h1 style={{ fontSize: 'clamp(1.7rem, 4vw, 2.5rem)', marginTop: '0.75rem' }}>
+              {product.name}
+            </h1>
+
+            <p className="section-copy" style={{ marginTop: '0.6rem', maxWidth: '70ch' }}>
+              {product.description}
+            </p>
+
+            {product.long_description && (
+              <div className="long-copy">
+                {product.long_description.split('\n').map((line, index) => (
+                  <p key={`${line}-${index}`} style={{ marginBottom: '0.6rem' }}>{line}</p>
+                ))}
+              </div>
+            )}
+
+            {product.tags?.length > 0 && (
+              <div className="tag-list" style={{ marginTop: '1rem' }}>
+                {product.tags.map((tag) => (
+                  <span key={tag} className="tag">#{tag}</span>
+                ))}
+              </div>
+            )}
+
+            {product.demo_url && (
+              <div className="feature-card" style={{ marginTop: '1rem' }}>
+                <h3 className="feature-title">Teste antes de comprar</h3>
+                <p className="feature-copy" style={{ marginBottom: '0.7rem' }}>
+                  Abra a versao demo para avaliar usabilidade e resultado antes de pagar.
+                </p>
+                <a href={product.demo_url} target="_blank" rel="noopener" className="btn-outline">
+                  <ExternalLink size={14} /> Abrir demo
+                </a>
+              </div>
+            )}
+          </article>
+
+          <aside className="checkout-card">
+            <p className="price" style={{ fontSize: '2rem', display: 'block' }}>
+              {formatPrice(product.price)}
+            </p>
+            <p className="section-copy" style={{ marginTop: '0.2rem' }}>
+              Pagamento unico. Acesso imediato apos aprovacao.
+            </p>
+
+            <div style={{ marginTop: '0.9rem' }}>
+              <CheckoutButton productId={product.id} productName={product.name} />
+            </div>
+
+            {product.demo_url && (
+              <a href={product.demo_url} target="_blank" rel="noopener" className="btn-outline" style={{ width: '100%', marginTop: '0.55rem' }}>
+                Ver demo gratis
+              </a>
+            )}
+
+            <div className="check-list">
+              <div className="check-item"><Download size={14} /> Download imediato</div>
+              <div className="check-item"><Shield size={14} /> Checkout Stripe seguro</div>
+              <div className="check-item"><CheckCircle size={14} /> Ate 5 downloads por pedido</div>
+              <div className="check-item"><CheckCircle size={14} /> Suporte via WhatsApp</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </div>
+  )
+}

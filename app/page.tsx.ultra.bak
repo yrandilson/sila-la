@@ -1,0 +1,374 @@
+import { supabase } from '@/lib/supabase'
+import { Product } from '@/lib/types'
+import Link from 'next/link'
+import { 
+  Search, ShoppingCart, Heart, Star, TrendingUp, 
+  Zap, Shield, Gift, ChevronRight, Menu
+} from 'lucide-react'
+
+async function getProducts(): Promise<Product[]> {
+  const { data } = await supabase
+    .from('products')
+    .select('*')
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+
+  return data || []
+}
+
+const typeEmoji: Record<string, string> = {
+  planilha: '📊',
+  software: '⚙️',
+  site: '🌐',
+  aplicacao: '📱',
+  outro: '📦',
+}
+
+function formatPrice(cents: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100)
+}
+
+export default async function HomePage() {
+  const products = await getProducts()
+  const categories = ['planilha', 'software', 'site', 'aplicacao', 'outro']
+
+  return (
+    <div className="min-h-screen">
+      {/* HEADER */}
+      <header className="store-header">
+        <div className="container">
+          <div className="header-inner">
+            <Link href="/" className="logo-brand">
+              <div className="logo-icon">𝓛</div>
+              <span>Sila</span><span>Lá</span>
+            </Link>
+
+            <div className="search-wrapper">
+              <div className="search-bar">
+                <Search size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Buscar ferramentas digitais..." 
+                  className="search-input"
+                />
+              </div>
+            </div>
+
+            <div className="nav-actions">
+              <button className="icon-button" title="Favoritos">
+                <Heart size={20} />
+              </button>
+              <button className="icon-button" title="Carrinho">
+                <ShoppingCart size={20} />
+                <span className="badge-count">0</span>
+              </button>
+              <Link href="/admin" className="btn-admin">
+                Admin Panel
+              </Link>
+            </div>
+          </div>
+
+          <div className="header-bottom">
+            <nav className="category-nav">
+              <button className="cat-button active">Todos</button>
+              {categories.map((cat) => (
+                <button key={cat} className="cat-button">
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {/* HERO */}
+      <section className="hero-section">
+        <div className="container">
+          <div className="hero-content">
+            <h1>Ferramentas Digitais Premium</h1>
+            <p>Impulsione seu negócio com produtos prontos para usar. Acesso imediato, sem complicações.</p>
+            <button className="btn-hero">Explorar Catálogo</button>
+          </div>
+        </div>
+      </section>
+
+      {/* STATS DASHBOARD */}
+      <section className="container" style={{ marginBottom: '3rem' }}>
+        <div className="stats-section">
+          <div className="stat-card">
+            <div className="stat-icon">⚡</div>
+            <div className="stat-value">2.5K+</div>
+            <div className="stat-label">Clientes Satisfeitos</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">📊</div>
+            <div className="stat-value">1.2M</div>
+            <div className="stat-label">Horas Economizadas</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">⭐</div>
+            <div className="stat-value">4.9/5</div>
+            <div className="stat-label">Avaliação Média</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">🚀</div>
+            <div className="stat-value">150+</div>
+            <div className="stat-label">Produtos Ativos</div>
+          </div>
+        </div>
+      </section>
+
+      {/* BENEFITS */}
+      <section className="container" style={{ marginBottom: '3rem' }}>
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">Por que escolher?</h2>
+            <p className="section-subtitle">Tudo o que você precisa em um só lugar</p>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '1.5rem'
+        }}>
+          {[
+            { icon: '⚡', title: 'Acesso Imediato', desc: 'Compre e tenha acesso ao arquivo em segundos' },
+            { icon: '🔒', title: 'Totalmente Seguro', desc: 'Pagamento certificado com Stripe e PIX' },
+            { icon: '💪', title: 'Suporte Completo', desc: 'Ajudamos você com dúvidas técnicas' },
+            { icon: '✨', title: 'Atualizações Grátis', desc: 'Receba melhorias sem custo adicional' },
+          ].map((benefit, idx) => (
+            <div 
+              key={idx}
+              className="stat-card"
+              style={{ cursor: 'default' }}
+            >
+              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
+                {benefit.icon}
+              </div>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                {benefit.title}
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                {benefit.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* PRODUCTS */}
+      <section className="products-section">
+        <div className="container">
+          <div className="section-header">
+            <div>
+              <h2 className="section-title">Produtos em Destaque</h2>
+              <p className="section-subtitle">Os melhores produtos do nosso catálogo</p>
+            </div>
+            <Link href="#" className="view-all-btn">
+              Ver tudo <ChevronRight size={16} />
+            </Link>
+          </div>
+
+          <div className="products-wrapper">
+            {/* SIDEBAR - Filters */}
+            <aside className="filters-sidebar">
+              <h3 className="filter-title">Filtros</h3>
+
+              <div className="filter-group">
+                <label className="filter-label">Ordenar</label>
+                <select className="filter-select">
+                  <option>Mais novo</option>
+                  <option>Mais vendido</option>
+                  <option>Menor preço</option>
+                  <option>Maior preço</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label className="filter-label">Faixa de preço</label>
+                <select className="filter-select">
+                  <option>Qualquer preço</option>
+                  <option>Até R$ 50</option>
+                  <option>R$ 50 a R$ 200</option>
+                  <option>Acima de R$ 200</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label className="filter-label">Categoria</label>
+                {categories.map((cat) => (
+                  <div key={cat} className="checkbox-item">
+                    <input type="checkbox" id={cat} defaultChecked />
+                    <label htmlFor={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</label>
+                  </div>
+                ))}
+              </div>
+            </aside>
+
+            {/* PRODUCTS GRID */}
+            <div className="products-main">
+              {products.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">📭</div>
+                  <h3 className="empty-title">Catálogo Vazio</h3>
+                  <p className="empty-desc">Nenhum produto publicado ainda. Volte em breve ou</p>
+                  <Link href="/admin" className="btn-primary">
+                    Adicionar Produtos
+                  </Link>
+                </div>
+              ) : (
+                <div className="products-grid">
+                  {products.map((product) => (
+                    <article key={product.id} className="product-card">
+                      <div className="product-image">
+                        <span className="product-emoji">
+                          {typeEmoji[product.type] || '📦'}
+                        </span>
+                        <span className="product-badge">TOP 🔥</span>
+                        <button className="product-wishlist" title="Adicionar aos favoritos">
+                          <Heart size={18} />
+                        </button>
+                      </div>
+
+                      <div className="product-info">
+                        <h3 className="product-name">{product.name}</h3>
+                        <p className="product-desc">{product.description}</p>
+
+                        <div className="product-rating">
+                          <div className="stars">
+                            {[...Array(5)].map((_, i) => (
+                              <span key={i} className={`star ${i < 4 ? 'filled' : ''}`}>
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                          <span className="rating-count">(42)</span>
+                        </div>
+
+                        {product.tags?.length > 0 && (
+                          <div className="product-tags">
+                            {product.tags.slice(0, 3).map((tag) => (
+                              <span key={tag} className="product-tag">{tag}</span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="product-footer">
+                          <div className="price-section">
+                            <span className="price-label">A partir de</span>
+                            <div className="price-value">
+                              {formatPrice(product.price)}
+                            </div>
+                          </div>
+
+                          <div className="product-actions">
+                            <Link 
+                              href={`/produto/${product.slug}`}
+                              className="btn-buy"
+                            >
+                              Comprar
+                            </Link>
+                            {product.demo_url && (
+                              <a
+                                href={product.demo_url}
+                                target="_blank"
+                                rel="noopener"
+                                className="btn-demo"
+                                title="Ver preview"
+                              >
+                                👁️
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA SECTION */}
+      <section style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        padding: '3rem 0',
+        marginTop: '3rem',
+      }}>
+        <div className="container" style={{ textAlign: 'center' }}>
+          <h2 style={{ marginBottom: '1rem' }}>Comece Hoje Mesmo</h2>
+          <p style={{ marginBottom: '2rem', fontSize: '1.1rem', opacity: 0.9 }}>
+            Junte-se a milhares de empresários que já economizam tempo e aumentam produtividade
+          </p>
+          <button className="btn-hero">Explorar Produtos</button>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="footer">
+        <div className="container">
+          <div className="footer-grid">
+            <div className="footer-col">
+              <h4>Sobre Nós</h4>
+              <ul className="footer-links">
+                <li><a href="/">Quem Somos</a></li>
+                <li><a href="/">Blog</a></li>
+                <li><a href="/">Carreiras</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-col">
+              <h4>Suporte</h4>
+              <ul className="footer-links">
+                <li><a href="/">Contato</a></li>
+                <li><a href="/">FAQ</a></li>
+                <li><a href="/">Centro de Ajuda</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-col">
+              <h4>Legal</h4>
+              <ul className="footer-links">
+                <li><a href="/">Privacidade</a></li>
+                <li><a href="/">Termos</a></li>
+                <li><a href="/">Cookies</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-col">
+              <h4>Fique Atualizado</h4>
+              <p className="footer-desc">Receba ofertas exclusivas e novidades.</p>
+              <form className="newsletter-form">
+                <input 
+                  type="email" 
+                  placeholder="seu@email.com" 
+                  className="newsletter-input"
+                  required
+                />
+                <button type="submit" className="btn-subscribe">
+                  Inscrever
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div className="footer-bottom">
+            <p>© 2026 Sila Lá. Todos os direitos reservados.</p>
+            <div className="payment-methods">
+              <span>💳 Cartão</span>
+              <span>📱 PIX</span>
+              <span>🔐 Stripe</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}

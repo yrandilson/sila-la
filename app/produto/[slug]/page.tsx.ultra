@@ -1,0 +1,535 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { Product } from '@/lib/types'
+import { CheckoutButton } from './CheckoutButton'
+import {
+  Star, Heart, Share2, Download, Check, MoreHorizontal,
+  AlertCircle, ChevronLeft, Zap, Shield, Users, TrendingUp
+} from 'lucide-react'
+import Link from 'next/link'
+
+interface ProductPageProps {
+  params: { slug: string }
+}
+
+const typeEmoji: Record<string, string> = {
+  planilha: '📊',
+  software: '⚙️',
+  site: '🌐',
+  aplicacao: '📱',
+  outro: '📦',
+}
+
+function formatPrice(cents: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100)
+}
+
+export default function ProductPage({ params }: ProductPageProps) {
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const { data } = await supabase
+          .from('products')
+          .select('*')
+          .eq('slug', params.slug)
+          .single()
+
+        if (!data) setError('Produto não encontrado')
+        else setProduct(data)
+      } catch (err) {
+        setError('Erro ao carregar')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [params.slug])
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        gap: '1rem',
+      }}>
+        <div style={{
+          width: '32px',
+          height: '32px',
+          border: '3px solid #e2e8f0',
+          borderTopColor: '#ff6b35',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <p>Carregando produto...</p>
+      </div>
+    )
+  }
+
+  if (error || !product) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        gap: '1rem',
+        textAlign: 'center',
+      }}>
+        <AlertCircle size={48} color="#ef4444" />
+        <h1>{error || 'Produto não encontrado'}</h1>
+        <p>Este produto pode ter sido removido.</p>
+        <Link href="/" style={{
+          color: '#ff6b35',
+          fontWeight: 600,
+          marginTop: '1rem',
+        }}>
+          ← Voltar ao catálogo
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      {/* HEADER */}
+      <header className="store-header">
+        <div className="container">
+          <div className="header-inner">
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ChevronLeft size={20} />
+              <span style={{ fontWeight: 600 }}>Voltar</span>
+            </Link>
+            <div style={{ flex: 1 }} />
+            <div className="nav-actions">
+              <button className="icon-button" title="Compartilhar">
+                <Share2 size={20} />
+              </button>
+              <button className="icon-button" title="Favorito">
+                <Heart size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* BREADCRUMB */}
+      <div className="container" style={{ paddingTop: '1.5rem', marginBottom: '2rem' }}>
+        <nav style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontSize: '0.9rem',
+          color: 'var(--text-secondary)',
+        }}>
+          <Link href="/" style={{ color: '#ff6b35' }}>Início</Link>
+          <span>/</span>
+          <span>{product.type}</span>
+          <span>/</span>
+          <span>{product.name}</span>
+        </nav>
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div className="container" style={{ marginBottom: '3rem' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 420px',
+          gap: '3rem',
+        }}>
+          {/* LEFT - Product Info */}
+          <div>
+            {/* PRODUCT IMAGE */}
+            <div style={{
+              aspectRatio: '1',
+              background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '5rem',
+              marginBottom: '2rem',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              {typeEmoji[product.type]}
+              <div style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                background: 'linear-gradient(135deg, #ff6b35 0%, #ffa876 100%)',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+              }}>
+                TOP VENDEDOR
+              </div>
+            </div>
+
+            {/* PRODUCT DETAILS */}
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <h1 style={{ marginBottom: '0.75rem' }}>{product.name}</h1>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  marginBottom: '1rem',
+                }}>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i} style={{
+                        color: i < 4 ? '#fbbf24' : '#ddd',
+                        fontSize: '1.2rem',
+                      }}>★</span>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '0.9rem', color: '#64748b' }}>
+                    4.8 (127 avaliações)
+                  </span>
+                </div>
+              </div>
+
+              <p style={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
+                {product.description}
+              </p>
+            </div>
+
+            {/* FEATURES */}
+            {product.tags && product.tags.length > 0 && (
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem', fontWeight: 700 }}>O que está incluído</h3>
+                <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {product.tags.map((tag) => (
+                    <li key={tag} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      color: '#64748b',
+                    }}>
+                      <Check size={18} color="#10b981" />
+                      {tag}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* FULL DESCRIPTION */}
+            <div style={{
+              background: '#fafbfc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '2rem',
+              marginBottom: '2rem',
+            }}>
+              <h3 style={{ marginBottom: '1rem', fontWeight: 700 }}>Descrição Completa</h3>
+              <p style={{ lineHeight: 1.8, marginBottom: '1rem' }}>
+                Este produto foi cuidadosamente desenvolvido para você transformar sua produtividade. 
+                Com acesso imediato, você poderá começar a usar tudo em segundos.
+              </p>
+              <p style={{ lineHeight: 1.8, marginBottom: '1rem', fontWeight: 600 }}>
+                Incluso no pacote:
+              </p>
+              <ul style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem',
+                marginLeft: '1rem',
+                listStyle: 'disc',
+              }}>
+                <li>Arquivos originais em múltiplos formatos</li>
+                <li>Suporte por email e chat</li>
+                <li>Atualizações futuras sem custo extra</li>
+                <li>Garantia de 7 dias ou dinheiro de volta</li>
+                <li>Acesso vitalício</li>
+              </ul>
+            </div>
+
+            {/* DEMO BUTTON */}
+            {product.demo_url && (
+              <a href={product.demo_url} target="_blank" rel="noopener" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '1rem 1.5rem',
+                background: '#f5f7fa',
+                border: '2px solid #e2e8f0',
+                borderRadius: '12px',
+                fontWeight: 600,
+                color: '#ff6b35',
+                cursor: 'pointer',
+                transition: 'all 200ms',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#fff'
+                e.currentTarget.style.borderColor = '#ff6b35'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#f5f7fa'
+                e.currentTarget.style.borderColor = '#e2e8f0'
+              }}>
+                👁️ Ver preview / demo
+              </a>
+            )}
+
+            {/* REVIEWS PREVIEW */}
+            <div style={{ marginTop: '3rem' }}>
+              <h3 style={{ marginBottom: '1.5rem', fontWeight: 700 }}>Avaliações de Clientes</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {[
+                  { name: 'João Silva', rating: 5, text: 'Excelente! Funcionou perfeitamente e economizei muito tempo.' },
+                  { name: 'Maria Santos', rating: 5, text: 'Melhor compra que fiz! Recomendo para todos.' },
+                ].map((review, idx) => (
+                  <div key={idx} style={{
+                    background: '#fafbfc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '1.25rem',
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '0.5rem',
+                    }}>
+                      <span style={{ fontWeight: 600 }}>{review.name}</span>
+                      <div style={{ display: 'flex', gap: '0.15rem' }}>
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} style={{
+                            color: i < review.rating ? '#fbbf24' : '#ddd',
+                          }}>★</span>
+                        ))}
+                      </div>
+                    </div>
+                    <p style={{ color: '#64748b', fontSize: '0.95rem' }}>{review.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT - Checkout Card */}
+          <div style={{ position: 'sticky', top: 100, height: 'fit-content' }}>
+            <div style={{
+              background: '#fafbfc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '20px',
+              padding: '2rem',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)',
+            }}>
+              {/* PRICE */}
+              <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>PREÇO</span>
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 900,
+                  color: '#ff6b35',
+                  fontFamily: 'monospace',
+                }}>
+                  {formatPrice(product.price)}
+                </div>
+                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Acesso vitalício</span>
+              </div>
+
+              {/* BENEFITS */}
+              <div style={{ marginBottom: '2rem' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  marginBottom: '1rem',
+                  fontSize: '0.95rem',
+                }}>
+                  <Zap size={18} color="#10b981" />
+                  <span>Acesso imediato ao download</span>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  marginBottom: '1rem',
+                  fontSize: '0.95rem',
+                }}>
+                  <Shield size={18} color="#10b981" />
+                  <span>Garantia de 7 dias</span>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  marginBottom: '1rem',
+                  fontSize: '0.95rem',
+                }}>
+                  <Download size={18} color="#10b981" />
+                  <span>Suporte técnico por email</span>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  fontSize: '0.95rem',
+                }}>
+                  <Users size={18} color="#10b981" />
+                  <span>Comunidade de usuários</span>
+                </div>
+              </div>
+
+              {/* CTA BUTTON */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <CheckoutButton 
+                  productId={product.id}
+                  className="btn-buy"
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #ff6b35 0%, #ffa876 100%)',
+                  }}
+                />
+              </div>
+
+              {/* SECURITY BADGES */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'auto auto',
+                gap: '0.75rem',
+                marginBottom: '2rem',
+                paddingBottom: '2rem',
+                borderBottom: '1px solid #e2e8f0',
+                fontSize: '0.8rem',
+                justifyContent: 'center',
+              }}>
+                <span style={{ textAlign: 'center' }}>🔒 SSL Seguro</span>
+                <span style={{ textAlign: 'center' }}>✓ Verificado</span>
+              </div>
+
+              {/* PAYMENT METHODS */}
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.75rem', fontWeight: 600 }}>
+                  FORMAS DE PAGAMENTO
+                </p>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '1rem',
+                  fontSize: '0.9rem',
+                }}>
+                  <span>💳 Cartão</span>
+                  <span>•</span>
+                  <span>📱 PIX</span>
+                  <span>•</span>
+                  <span>🔐 Stripe</span>
+                </div>
+              </div>
+
+              {/* SELLER INFO */}
+              <div style={{
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                textAlign: 'center',
+              }}>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                  VENDEDOR VERIFICADO
+                </p>
+                <p style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Sila Lá Store</p>
+                <p style={{ fontSize: '0.9rem', color: '#64748b' }}>⭐ 4.9 (2.5k vendas)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RELATED PRODUCTS */}
+      <section style={{
+        background: '#fafbfc',
+        borderTop: '1px solid #e2e8f0',
+        borderBottom: '1px solid #e2e8f0',
+        padding: '3rem 0',
+      }}>
+        <div className="container">
+          <h2 style={{ marginBottom: '2rem' }}>Você também pode gostar</h2>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '1.5rem',
+          }}>
+            {['📊 Planilha', '⚙️ Software', '🌐 Website'].map((name) => (
+              <Link key={name} href="/" style={{
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '1rem',
+                textAlign: 'center',
+                textDecoration: 'none',
+                transition: 'all 200ms',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#ff6b35'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e2e8f0'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                  {name.charAt(0)}
+                </div>
+                <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{name}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="footer">
+        <div className="container">
+          <div className="footer-grid">
+            <div className="footer-col">
+              <h4>Sobre</h4>
+              <ul className="footer-links">
+                <li><a href="/">Quem Somos</a></li>
+                <li><a href="/">Blog</a></li>
+              </ul>
+            </div>
+            <div className="footer-col">
+              <h4>Suporte</h4>
+              <ul className="footer-links">
+                <li><a href="/">Contato</a></li>
+                <li><a href="/">FAQ</a></li>
+              </ul>
+            </div>
+            <div className="footer-col">
+              <h4>Legal</h4>
+              <ul className="footer-links">
+                <li><a href="/">Privacidade</a></li>
+                <li><a href="/">Termos</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <p>© 2026 Sila Lá. Todos os direitos reservados.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
